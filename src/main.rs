@@ -30,8 +30,8 @@ fn run(ops: &Vec<Op>, mem: &mut [u8], ptr: &mut usize) {
         match op {
             Op::INP => *ptr += 1,
             Op::DEP => *ptr -= 1,
-            Op::INC => mem[*ptr] += 1,
-            Op::DEC => mem[*ptr] -= 1,
+            Op::INC => mem[*ptr] = mem[*ptr].wrapping_add(1),
+            Op::DEC => mem[*ptr] = mem[*ptr].wrapping_sub(1),
             Op::PRN => print!("{}", mem[*ptr] as char),
             Op::RDC => { /* FIXME: read char */ }
             Op::LOOP(inner) => {
