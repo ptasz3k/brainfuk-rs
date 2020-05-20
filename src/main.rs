@@ -16,10 +16,10 @@ enum Tok {
 
 #[derive(Debug)]
 enum Op {
-    INP,
-    DEP,
-    INC,
-    DEC,
+    INP(usize),
+    DEP(usize),
+    INC(u8),
+    DEC(u8),
     PRN,
     RDC,
     LOOP(Vec<Op>),
@@ -28,10 +28,10 @@ enum Op {
 fn run(ops: &Vec<Op>, mem: &mut [u8], ptr: &mut usize) {
     for op in ops {
         match op {
-            Op::INP => *ptr += 1,
-            Op::DEP => *ptr -= 1,
-            Op::INC => mem[*ptr] = mem[*ptr].wrapping_add(1),
-            Op::DEC => mem[*ptr] = mem[*ptr].wrapping_sub(1),
+            Op::INP(n) => *ptr += n,
+            Op::DEP(n) => *ptr -= n,
+            Op::INC(n) => mem[*ptr] = mem[*ptr].wrapping_add(*n),
+            Op::DEC(n) => mem[*ptr] = mem[*ptr].wrapping_sub(*n),
             Op::PRN => print!("{}", mem[*ptr] as char),
             Op::RDC => { /* FIXME: read char */ }
             Op::LOOP(inner) => {
@@ -67,10 +67,10 @@ fn parse(tokens: &Vec<Tok>) -> Vec<Op> {
     tokens.iter().enumerate().for_each(|(i, t)| {
         if i >= loop_end {
             match t {
-                Tok::INP => program.push(Op::INP),
-                Tok::DEP => program.push(Op::DEP),
-                Tok::INC => program.push(Op::INC),
-                Tok::DEC => program.push(Op::DEC),
+                Tok::INP => program.push(Op::INP(1)),
+                Tok::DEP => program.push(Op::DEP(1)),
+                Tok::INC => program.push(Op::INC(1)),
+                Tok::DEC => program.push(Op::DEC(1)),
                 Tok::PRN => program.push(Op::PRN),
                 Tok::RDC => program.push(Op::RDC),
                 Tok::BRZ => {
