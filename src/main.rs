@@ -2,7 +2,7 @@ use std::io::{self, Read};
 
 const MAX_MEM: usize = 64 * 1024;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Tok {
     INP,
     DEP,
@@ -12,6 +12,7 @@ enum Tok {
     RDC,
     BRZ,
     RET,
+    NOP,
 }
 
 #[derive(Debug)]
@@ -44,7 +45,7 @@ fn run(ops: &Vec<Op>, mem: &mut [u8], ptr: &mut usize) {
 }
 
 fn tokenize(input: &str) -> Vec<Tok> {
-    input
+    let mut tokens: Vec<Tok> = input
         .chars()
         .filter_map(|b| match b {
             '>' => Some(Tok::INP),
@@ -57,7 +58,10 @@ fn tokenize(input: &str) -> Vec<Tok> {
             ']' => Some(Tok::RET),
             _ => None,
         })
-        .collect()
+        .collect();
+
+    tokens.push(Tok::NOP);
+    tokens
 }
 
 fn parse(tokens: &Vec<Tok>) -> Vec<Op> {
@@ -95,15 +99,77 @@ fn parse(tokens: &Vec<Tok>) -> Vec<Op> {
     program
 }
 
+fn optimizing_parse(tokens: &Vec<Tok>) -> Vec<Op> {
+    let mut program: Vec<Op> = Vec::new();
+    let mut loop_end = 0;
+    let mut count = 1;
+    let mut prev_tok: &Tok = &Tok::NOP;
+    tokens.iter().enumerate().for_each(|(i, t)| {
+        if i >= loop_end {
+            match prev_tok {
+                Tok::INP if t == &Tok::INP => count += 1,
+                Tok::INP => {
+                    program.push(Op::INP(count));
+                    count = 1;
+                }
+                Tok::DEP if t == &Tok::DEP => count += 1,
+                Tok::DEP => {
+                    program.push(Op::DEP(count));
+                    count = 1;
+                }
+                Tok::INC if t == &Tok::INC => count += 1,
+                Tok::INC => {
+                    program.push(Op::INC((count % 256) as u8));
+                    count = 1;
+                }
+                Tok::DEC if t == &Tok::DEC => count += 1,
+                Tok::DEC => {
+                    program.push(Op::DEC((count % 256) as u8));
+                    count = 1;
+                }
+                Tok::PRN => program.push(Op::PRN),
+                Tok::RDC => program.push(Op::RDC),
+                Tok::BRZ => {
+                    let mut pc = i - 1;
+                    let mut loop_count = 1;
+                    while loop_count != 0 {
+                        pc += 1;
+                        match tokens[pc] {
+                            Tok::BRZ => loop_count += 1,
+                            Tok::RET => loop_count -= 1,
+                            _ => (),
+                        }
+                    }
+                    loop_end = pc + 1;
+                    let mut loop_body = tokens[i..pc].to_vec();
+                    loop_body.push(Tok::NOP);
+                    count = 1;
+                    program.push(Op::LOOP(optimizing_parse(&loop_body)))
+                }
+                _ => (),
+            }
+        }
+        prev_tok = t;
+    });
+
+    program
+}
+
 fn main() -> io::Result<()> {
     let mut input: String = String::from("");
     io::stdin().read_to_string(&mut input)?;
 
-    let tokens = tokenize(&input);
-    let program = parse(&tokens);
+    let optimize = true;
 
-    // println!("{:?}", tokens);
-    // println!("{:?}", program);
+    let tokens = tokenize(&input);
+    let program = if optimize {
+        optimizing_parse(&tokens)
+    } else {
+        parse(&tokens)
+    };
+
+ //   println!("{:?}", tokens);
+ //   println!("{:?}", program);
 
     println!("Starting program in 3.. 2.. 1.. Now!");
     let mut memory: [u8; MAX_MEM] = [0; MAX_MEM];
