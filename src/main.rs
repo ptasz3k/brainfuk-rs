@@ -26,7 +26,7 @@ enum Op {
     LOOP(Vec<Op>),
 }
 
-fn run(ops: &Vec<Op>, mem: &mut [u8], ptr: &mut usize) {
+fn run(ops: &[Op], mem: &mut [u8], ptr: &mut usize) {
     for op in ops {
         match op {
             Op::INP(n) => *ptr += n,
@@ -64,7 +64,7 @@ fn tokenize(input: &str) -> Vec<Tok> {
     tokens
 }
 
-fn parse(tokens: &Vec<Tok>) -> Vec<Op> {
+fn parse(tokens: &[Tok]) -> Vec<Op> {
     let mut program: Vec<Op> = Vec::new();
 
     let mut loop_end = 0;
@@ -99,7 +99,7 @@ fn parse(tokens: &Vec<Tok>) -> Vec<Op> {
     program
 }
 
-fn optimizing_parse(tokens: &Vec<Tok>) -> Vec<Op> {
+fn optimizing_parse(tokens: &[Tok]) -> Vec<Op> {
     let mut program: Vec<Op> = Vec::new();
     let mut loop_end = 0;
     let mut count = 1;
